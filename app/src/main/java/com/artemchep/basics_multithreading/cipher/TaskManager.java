@@ -5,8 +5,8 @@ import android.util.Log;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class TaskManager<T extends Runnable> {
-    private final Queue<T> tasksQueue = new LinkedList<>();
+public class TaskManager {
+    private final Queue<Runnable> tasksQueue = new LinkedList<>();
     private volatile boolean isRunning = true;
 
     public void start() {
@@ -14,7 +14,7 @@ public class TaskManager<T extends Runnable> {
             @Override
             public void run() {
                 while (isRunning) {
-                    T task = getNewTask();
+                    Runnable task = getNewTask();
                     task.run();
                 }
             }
@@ -23,7 +23,7 @@ public class TaskManager<T extends Runnable> {
         thread.start();
     }
 
-    private T getNewTask() {
+    private Runnable getNewTask() {
         synchronized (this) {
             while (tasksQueue.isEmpty() && isRunning) {
                 waitForTask();
@@ -33,7 +33,7 @@ public class TaskManager<T extends Runnable> {
         }
     }
 
-    public void addTask(T task) {
+    public void addTask(Runnable task) {
         synchronized (this) {
             boolean res = tasksQueue.offer(task);
             Log.d("Post Task", String.valueOf(res));

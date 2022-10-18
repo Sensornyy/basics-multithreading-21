@@ -20,7 +20,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
     private List<WithMillis<Message>> mList = new ArrayList<>();
     private MessageAdapter mAdapter = new MessageAdapter(mList);
-    private final TaskManager<Cipher> manager = new TaskManager<>();
+    private final TaskManager manager = new TaskManager();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,8 +54,8 @@ public class MainActivity extends AppCompatActivity {
         task.setCipher(new ICipher() {
             @Override
             public void updateUI(String cypheredText, long executionTime) {
-                final Message messageNew = message.value.copy(cypheredText); // call with cyphered text
-                final WithMillis<Message> messageNewWithMillis = new WithMillis<>(messageNew, executionTime);  //call with elapsed time
+                final Message messageNew = message.value.copy(cypheredText);
+                final WithMillis<Message> messageNewWithMillis = new WithMillis<>(messageNew, executionTime);
                 update(messageNewWithMillis);
             }
         });
