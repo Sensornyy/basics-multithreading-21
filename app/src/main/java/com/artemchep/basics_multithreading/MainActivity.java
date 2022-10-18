@@ -4,12 +4,13 @@ import android.os.Bundle;
 import android.view.View;
 
 import androidx.annotation.UiThread;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.artemchep.basics_multithreading.cipher.CipherUtil;
+import com.artemchep.basics_multithreading.cipher.Cipher;
+import com.artemchep.basics_multithreading.cipher.ICipher;
+import com.artemchep.basics_multithreading.cipher.TaskManager;
 import com.artemchep.basics_multithreading.domain.Message;
 import com.artemchep.basics_multithreading.domain.WithMillis;
 
@@ -17,10 +18,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-
     private List<WithMillis<Message>> mList = new ArrayList<>();
-
     private MessageAdapter mAdapter = new MessageAdapter(mList);
+    private final TaskManager<Cipher> manager = new TaskManager<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,17 +31,13 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(mAdapter);
 
-        showWelcomeDialog();
+        manager.start();
     }
 
-    private void showWelcomeDialog() {
-        new AlertDialog.Builder(this)
-                .setMessage("What are you going to need for this task: Thread, Handler.\n" +
-                        "\n" +
-                        "1. The main thread should never be blocked.\n" +
-                        "2. Messages should be processed sequentially.\n" +
-                        "3. The elapsed time SHOULD include the time message spent in the queue.")
-                .show();
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        manager.stop();
     }
 
     public void onPushBtnClick(View view) {
@@ -54,19 +50,17 @@ public class MainActivity extends AppCompatActivity {
         mList.add(message);
         mAdapter.notifyItemInserted(mList.size() - 1);
 
-        // TODO: Start processing the message (please use CipherUtil#encrypt(...)) here.
-        //       After it has been processed, send it to the #update(...) method.
+        Cipher task = new Cipher(message.value.plainText, System.currentTimeMillis());
+        task.setCipher(new ICipher() {
+            @Override
+            public void updateUI(String cypheredText, long executionTime) {
+                final Message messageNew = message.value.copy(cypheredText); // call with cyphered text
+                final WithMillis<Message> messageNewWithMillis = new WithMillis<>(messageNew, executionTime);  //call with elapsed time
+                update(messageNewWithMillis);
+            }
+        });
 
-        // How it should look for the end user? Uncomment if you want to see. Please note that
-        // you should not use poor decor view to send messages to UI thread.
-//        getWindow().getDecorView().postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                final Message messageNew = message.value.copy("sample :)");
-//                final WithMillis<Message> messageNewWithMillis = new WithMillis<>(messageNew, CipherUtil.WORK_MILLIS);
-//                update(messageNewWithMillis);
-//            }
-//        }, CipherUtil.WORK_MILLIS);
+        manager.addTask(task);
     }
 
     @UiThread
@@ -81,5 +75,4 @@ public class MainActivity extends AppCompatActivity {
 
         throw new IllegalStateException();
     }
-
 }
