@@ -14,7 +14,13 @@ public class TaskManager {
             @Override
             public void run() {
                 while (isRunning) {
-                    Runnable task = getNewTask();
+                    Runnable task = null;
+                    try {
+                        task = getNewTask();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    assert task != null;
                     task.run();
                 }
             }
@@ -23,10 +29,10 @@ public class TaskManager {
         thread.start();
     }
 
-    private Runnable getNewTask() {
+    private Runnable getNewTask() throws InterruptedException {
         synchronized (this) {
             while (tasksQueue.isEmpty() && isRunning) {
-                waitForTask();
+                wait();
             }
 
             return tasksQueue.poll();
@@ -45,15 +51,6 @@ public class TaskManager {
         synchronized (this) {
             isRunning = false;
             notify();
-        }
-    }
-
-    private void waitForTask() {
-        try {
-            Log.d("Queue", "Queue is empty");
-            wait();
-        } catch (Exception e) {
-            Log.d("Exception", String.valueOf(e));
         }
     }
 }
